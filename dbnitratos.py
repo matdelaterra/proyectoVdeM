@@ -6,6 +6,7 @@ Created on Thu Mar 26 17:04:14 2020
 """
 
 import pandas as pd
+import datetime
 from pathlib import Path
 
 def lista(ruta = Path.cwd()):
@@ -13,6 +14,47 @@ def lista(ruta = Path.cwd()):
        de los archivos contenidos en una carpeta 
     '''
     return [arch.name for arch in Path(ruta).iterdir() if arch.is_file()]
+
+def get_time():
+    '''
+    Devuelve la fecha y hora actual
+    '''
+    return datetime.datetime.now().strftime("%A %d %B %Y %I:%M")
+
+def coord_params(X=0, Y=0, x_0=0, y_0=0, dx=1, dy=1):
+    '''
+    Parametros
+    ----------
+    X : Tipo: float  
+        Coordenada x a transformar. The default is 0.
+    Y : Tipo: float 
+        Coordenada y a transformar. The default is 0.
+    x_0 : Tipo: float   
+        Coordenada x de rederencia. The default is 0.
+    y_0 : Tipo: float 
+        Coordenada y de rederencia. The default is 0.
+    dx : Tipo: int 
+        Tamaño de la celda en x. The default is 1.
+    dy : Tipo: int
+        Tamaño de la celda en x. The default is 1.
+
+    Returns
+    -------
+    row : TYPE int
+        Fila correspondiente a la coordenada transformada
+    column : TYPE int
+        Columna correspondiente a la coordenada transformada
+    r_off : TYPE float
+    c_off : TYPEfloat
+        Offset desde el centro de la celda a la posición real
+    '''
+    xmod = X - x_0
+    ymod = y_0 - Y 
+    row = ymod//dy + 1
+    column = xmod//dx + 1
+    r_off = (ymod - row*dy)/dy
+    c_off = (xmod - column*dx)/dx
+    return row, column, r_off, c_off
 
     
 def no3_xls2tob(MaxConcObs=200, MaxFluxObs=1, MaxFluxCells=0,#dataset1
@@ -52,7 +94,8 @@ def no3_xls2tob(MaxConcObs=200, MaxFluxObs=1, MaxFluxCells=0,#dataset1
         nConcObs = dataframe['NO3'].count()
         outnam = outnam + '.tob'
         escritura = open(Path.cwd()/ 'output'/ outnam, 'w') 
-        header = '# TOB: Transport Observation package\n'
+        time = get_time()
+        header = f'# TOB: Transport Observation package Created on {time} \n'
         escritura.write(header)
         
         data_set1 = f'{MaxConcObs}\t{MaxFluxObs}\t{MaxFluxCells} # Data Set 1: MaxConcObs, MaxFluxObs, MaxFluxCells\n'
@@ -69,12 +112,9 @@ def no3_xls2tob(MaxConcObs=200, MaxFluxObs=1, MaxFluxCells=0,#dataset1
         for fila in range(dataframe.shape[0]):
             if check[fila]:
                 COBS = dataframe['NO3'][fila]
-                xmod = dataframe['X'][fila] - x0
-                ymod = y0 - dataframe['Y'][fila]
-                row = ymod//dy + 1
-                column = xmod//dx + 1
-                r_off = (ymod - row*dy)/dy
-                c_off = (xmod - column*dx)/dx
+                row, column, r_off, c_off = coord_params(dataframe['X'][fila], dataframe['Y'][fila],
+                                                         x0, y0, dx, dy)
+
                 #z, rho = geom(row,column) 
                 yr = dataframe['YR'][fila]
                 timeObs = (yr - year_ini) * 3600 * 24 * 365
@@ -105,7 +145,8 @@ def xls2modflow(archivo=None, x0=0, y0=0, dx=2000, dy=2000, ml_obs=0, max_m=2, i
         obs = datos.iloc[:,3:]
         numero_hobs = obs.count().sum()
         obs_bool = obs.isnull()
-        encabezado = '''#DATOS DEL ENCABEZADO
+        encabezado = f'''#Archivo ob_hob\t Created on {get_time()}  
+#DATOS DEL ENCABEZADO
 #numero_hobs-Número de observaciones de carga 
 #ml_obs-Observaciones multicapa  
 #max_m-Número máximo de capas para observaciones multicapa
@@ -141,13 +182,8 @@ def xls2modflow(archivo=None, x0=0, y0=0, dx=2000, dy=2000, ml_obs=0, max_m=2, i
         
         for fila in range(obs.shape[0]):
             obsname = datos['ID'][fila]
-            xmod = datos['X'][fila] - x0
-            ymod = y0 - datos['Y'][fila]
-            row = ymod//dy + 1
-            column = xmod//dx + 1
-            r_off = (ymod - row*dy)/dy
-            c_off = (xmod - column*dx )/dx
-            
+            row, column, r_off, c_off = coord_params(datos['X'][fila], datos['Y'][fila],
+                                                         x0, y0, dx, dy)
             irefsp = -obs.loc[fila].count()
             toffset = 0.0
             hobs = 0.0
@@ -167,10 +203,8 @@ def xls2modflow(archivo=None, x0=0, y0=0, dx=2000, dy=2000, ml_obs=0, max_m=2, i
                     escritura.write(formato)
         escritura.close()
     return datos
-
+###########################
 datos = no3_xls2tob()
 piez = xls2modflow('pozos_excel.xls',455204.44, 2110063.17+64000)
-
-
 
 
