@@ -196,8 +196,7 @@ def nitratos2tob(MaxConcObs=1000, MaxFluxObs=1, MaxFluxCells=0,#dataset1
 
 
 
-def piezometria2ob_hob(outnam='output', x0=455204.440, y0=2110063.17+64000, dx=2000, dy=2000, ml_obs=0, max_m=2, iu_hobsv=42, hob_dry=1.0E+30, 
-                tm_of_mult_hbs=1.0, na_val = ['ND','nd'], layer=2, year=1934):
+def piezometria2ob_hob(outnam='output', x0=455204.440, y0=2110063.17+64000, dx=2000, dy=2000, ml_obs=0, max_m=2, iu_hobsv=42, hob_dry=1.0E+30, tm_of_mult_hbs=1.0, na_val = ['ND','nd'], layer=2, year=1934):
     ''' 
     Función que convierte un archivo de datos de piezometría al formato ob_hob de modflow
     '''
@@ -253,20 +252,20 @@ def piezometria2ob_hob(outnam='output', x0=455204.440, y0=2110063.17+64000, dx=2
             obsname = str(datos['ID'][fila])
             row, column, r_off, c_off = coord_params(datos['X'][fila], datos['Y'][fila], x0, y0, dx, dy)
             irefsp = -obs.loc[fila].count()
-            toffset = 0.0
+            toffset = 3600 * 24 * 365
             hobs = 0.0
-            itt = 1 #1 para usar observaciones de carga, 2 para usar cambios de carga como observaciones
-            
-            formato = f'{obsname} {layer} {row} {column} {irefsp} {toffset:E} {r_off:E} {c_off:E} {hobs:E}\n{itt}\n'#datos del pozo
-            escritura.write(formato)
-            
+            itt = 2 #1 para usar observaciones de carga, 2 para usar cambios de carga como observaciones
+            obs_num = 1
             for columna in range(obs.shape[1]):
                 if not obs_bool.iloc[fila,columna]:
-                    yr = list(obs.columns)[columna]
-                    obs_subname =  obsname + '_' + str(yr)[-2:]
-                    irefsp = 1 #periodo de stress para el cual el tiempo se observacion es referenciado
-                    toffset = (int(yr) - year) * 3600 * 24 * 365
                     hobs = obs.iloc[fila,columna]
+                    if obs_num == 1:
+                        formato = f'{obsname} {layer} {row} {column} {irefsp} {toffset:E} {r_off:E} {c_off:E} {hobs:E}\n{itt}\n'
+                        escritura.write(formato)                        
+                    yr = list(obs.columns)[columna]
+                    obs_subname =  obsname + '_' + str(obs_num)
+                    obs_num += 1
+                    irefsp = int((yr) - year) + 1
                     formato = f'{obs_subname} {irefsp} {toffset:E} {hobs:E}\n'
                     escritura.write(formato)
         escritura.close()
