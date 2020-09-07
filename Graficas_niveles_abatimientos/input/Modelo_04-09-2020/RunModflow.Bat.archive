@@ -1,0 +1,4 @@
+if not exist "..\..\output\NUL" mkdir "..\..\output"
+if not exist "..\..\output\output.AZMCM\NUL" mkdir "..\..\output\output.AZMCM"
+..\..\bin\mf2005.exe AZMCM.nam /wait
+pause

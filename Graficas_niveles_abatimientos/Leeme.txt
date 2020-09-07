@@ -1,0 +1,18 @@
+Ejecutar el código desde un directorio que contenga el script hgraphs.py 
+junto con las carpetas input y output correspondientes.
+Si se está utilizando otro script dentro del mismo directorio puede
+invocar hgraphs al inicio con la siguientes línea de código
+from hgraphs import graficasN_D
+Si desea cargar el modelo asegúrese de que existan los archivos con las siguientes 
+extensiones
+.dis
+.bas
+.oc
+.pcg
+.lpf
+.wel
+.drn
+.rch
+.ob_hob
+.list
+Para más información, leer la documentación.

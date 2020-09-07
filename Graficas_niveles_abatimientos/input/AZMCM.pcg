@@ -1,0 +1,7 @@
+# PCG: Preconditioned Conjugate Gradient package file created on 04/09/2020 by ModelMuse version 4.3.0.0.
+# PCG: Preconditioned Conjugate Gradient package file created on 01/09/2020 by ModelMuse version 4.3.0.0.
+# PCG: Preconditioned Conjugate Gradient package file created on 24/08/2020 by ModelMuse version 4.3.0.0.
+# PCG: Preconditioned Conjugate Gradient package file created on 24/08/2020 by ModelMuse version 4.3.0.0.
+# PCG: Preconditioned Conjugate Gradient package file created on 31/07/2020 by ModelMuse version 4.2.0.0.
+   100   100     1     0 # MXITER, ITER1, NPCOND, IHCOFADD
+  2.000000000000E+000   2.000000000000E+000   1.000000000000E+000      1     1     0  1.000000000000E+000  # HCLOSE, RCLOSE, RELAX, NBPOL, IPRPCG, MUTPCG, DAMPPCG

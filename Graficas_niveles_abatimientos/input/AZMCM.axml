@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Model_Archive_List>
+  <bin Model_Name="AZMCM" FileType="bin">
+    <FileName Model_Name="AZMCM" FileType="bin">..\..\WRDAPP\ucode_2014_1.004_and_more\ucode_2014_1.004\bin\mf2005.exe</FileName>
+  </bin>
+  <ancillary Model_Name="AZMCM" FileType="ancillary">
+    <FileName Model_Name="AZMCM" FileType="ancillary">..\conOBS\AZMCM.gpt</FileName>
+  </ancillary>
+  <model Model_Name="AZMCM" FileType="Model Input">
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.bas</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.dis</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.drn</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.gsf</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.jtf</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.lpf</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.mlt</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.nam.archive</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.ob_hob</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.oc</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.pcg</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.pval</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.rch</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.wel</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">AZMCM.zon</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">RunModflow.Bat.archive</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Input">usgs.AZMCM.reference</FileName>
+  </model>
+  <output Model_Name="AZMCM" FileType="Model Output">
+    <FileName Model_Name="AZMCM" FileType="Model Output">AZMCM.cbc</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Output">AZMCM.fdn</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Output">AZMCM.fhd</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Output">AZMCM.hob_out</FileName>
+    <FileName Model_Name="AZMCM" FileType="Model Output">AZMCM.lst</FileName>
+  </output>
+</Model_Archive_List>
