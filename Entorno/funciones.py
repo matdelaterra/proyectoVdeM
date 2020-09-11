@@ -35,6 +35,42 @@ def lista(ruta=Path.cwd(), ext='xls' ):
             nombres.append(archivo)    
     return nombres
 
+
+def corregir_nombre(cadena):
+    '''
+    Función que recibe una cadena de caracteres, verifica si el primer elemento
+    es un carácter alfabético y genera una nueva cadena.
+    Los elementos no alfanuméricos son sustituídos por '_'
+
+    Parámetros
+    ----------
+    cadena : str
+        Cadena de caracteres a convertir
+
+    Returns
+    -------
+    cadena : str
+        Cadena original
+    n_nombre : TYPE
+        Nueva cadena
+
+    '''
+    cadena = str(cadena)
+    lista = []
+    
+    if not cadena[0].isalpha():
+        lista.append('p')
+
+    for letra in cadena:    
+        if letra.isalnum():
+            lista.append(letra)
+
+        else:
+            lista.append('_')
+    n_nombre = ''.join(lista)
+    return cadena, n_nombre
+
+
 def get_time():
     '''
     Devuelve la fecha y hora actual
@@ -196,7 +232,10 @@ def nitratos2tob(MaxConcObs=1000, MaxFluxObs=1, MaxFluxCells=0,#dataset1
 
 
 
-def piezometria2ob_hob(outnam='output', x0=455204.440, y0=2110063.17+64000, dx=2000, dy=2000, ml_obs=0, max_m=2, iu_hobsv=42, hob_dry=1.0E+30, tm_of_mult_hbs=1.0, na_val = ['ND','nd'], layer=2, year=1934):
+def piezometria2ob_hob(outnam='output', rename=False, x0=455204.440, y0=2110063.17+64000, 
+                       dx=2000, dy=2000, ml_obs=0, max_m=2, iu_hobsv=42, 
+                       hob_dry=1.0E+30, tm_of_mult_hbs=1.0, 
+                       na_val = ['ND','nd'], layer=2, year=1934, toffset = 3600 * 24 * 365):
     ''' 
     Función que convierte un archivo de datos de piezometría al formato ob_hob de modflow
     '''
@@ -209,65 +248,52 @@ def piezometria2ob_hob(outnam='output', x0=455204.440, y0=2110063.17+64000, dx=2
         print('Importando archivos...')
         print(f'Cargando datos desde {lista_piezometria[0]}')
         datos = pd.read_excel(path_piezometria/lista_piezometria[0], na_values=na_val)
+        
+        if rename:
+            reg_rename = open(Path.cwd()/ 'ob_hob'/'salida'/'cambio_nombres.txt', 'w')
+            reg_rename.write('Anterior\tActual\n')
         obs = datos.iloc[:,3:]
         numero_hobs = obs.count().sum()
         obs_bool = obs.isnull()
-        encabezado = f'''#Archivo ob_hob\t Created on {get_time()} by Dpto Rec. Nat, IGF UNAM 
-#DATOS DEL ENCABEZADO
-#numero_hobs-Número de observaciones de carga 
-#ml_obs-Observaciones multicapa  
-#max_m-Número máximo de capas para observaciones multicapa
-#iu_hobsv-Número de unidad para guardar el archivo de datos de observación
-#hob_dry-Valor de el equivalente simulado que es escrito en el archivo de salida
-# de observaciones cuando la información es omitida al considerar la celda seca
-#tm_of_mult_hbs-Multiplicador de desplazamiento de tiempo para las observaciones de carga(o T/T)\n
-'''
-        
-        formato = f'{numero_hobs} {ml_obs} {max_m} {iu_hobsv} {hob_dry:E}\n{tm_of_mult_hbs:.6f}\n'
         archivo = outnam + '.ob_hob'
+        encabezado = f'#Archivo ob_hob\t Created on {get_time()} by Dpto Rec. Nat, IGF UNAM \n'
         escritura = open(Path.cwd()/ 'ob_hob'/'salida'/archivo, 'w')
-        escritura.write(encabezado)
-        encabezado = '''#DATOS DE OBSERVACION
-#ENCABEZADO
-#obsname-Nombre del pozo
-#layer-Capa
-#row-Fila
-#column-Columna
-#irefsp-periodos de stress cuyo tiempo de observacion es referenciado
-#toffset-time_offset
-#r_offset
-#c_offset
-#hobs-observacion(0.0)
-#itt-1 para usar observaciones de carga, 2 para usar cambios de carga como observaciones
-#OBSERVACION
-#obs_subname-Nombre de observación
-#irefsp-Periodo de stress
-#toffset-time offset
-#hobs-Observación\n
-'''
-        escritura.write(encabezado)   
-        escritura.write(formato)
+        escritura.write(encabezado)         
+        
+        dat_set1 = f'  {numero_hobs}     {ml_obs}    {max_m}    {iu_hobsv}   {hob_dry:E} # Data Set 1: NH MOBS MAXM IUHOBSV HOBDRY\n'
+        escritura.write(dat_set1)
+        
+        dat_set2 = f"{  tm_of_mult_hbs:.6f}#Data Set 2: TOMULTH\n"
+        escritura.write(dat_set2)       
+        
         
         for fila in range(obs.shape[0]):
             obsname = str(datos['ID'][fila])
+            if rename:
+                anterior, obsname = corregir_nombre(obsname)
+                reg_rename.write(f'{anterior}\t\t{obsname}\n')
+                
+                
             row, column, r_off, c_off = coord_params(datos['X'][fila], datos['Y'][fila], x0, y0, dx, dy)
             irefsp = -obs.loc[fila].count()
-            toffset = 3600 * 24 * 365
-            hobs = 0.0
             itt = 2 #1 para usar observaciones de carga, 2 para usar cambios de carga como observaciones
             obs_num = 1
             for columna in range(obs.shape[1]):
                 if not obs_bool.iloc[fila,columna]:
                     hobs = obs.iloc[fila,columna]
                     if obs_num == 1:
-                        formato = f'{obsname} {layer} {row} {column} {irefsp} {toffset:E} {r_off:E} {c_off:E} {hobs:E}\n{itt}\n'
-                        escritura.write(formato)                        
+                        dat_set3 = f'{obsname}    {layer}    {row}    {column}   {irefsp}   {toffset:E}   {r_off:E}   {c_off:E}   {hobs:E} # Data Set 3: OBSNAM LAYER ROW COLUMN IREFSP TOFFSET ROFF COFF HOBS\n'
+                        escritura.write(dat_set3)
+                        dat_set5 = f'     {itt} # Data Set 5: ITT\n'
+                        escritura.write(dat_set5)
                     yr = list(obs.columns)[columna]
                     obs_subname =  obsname + '_' + str(obs_num)
                     obs_num += 1
                     irefsp = int((yr) - year) + 1
-                    formato = f'{obs_subname} {irefsp} {toffset:E} {hobs:E}\n'
-                    escritura.write(formato)
+                    dat_set6 = f'{obs_subname}    {irefsp}   {toffset:E}   {hobs:E} # Data Set 6: OBSNAM IREFSP TOFFSET HOBS\n'
+                    escritura.write(dat_set6)
+        if rename:
+            reg_rename.close()
         escritura.close()
         print(f"Finalizado: archivo exportado en {Path.cwd()/ 'ob_hob'/'salida'/archivo}")
     else:
@@ -276,7 +302,7 @@ def piezometria2ob_hob(outnam='output', x0=455204.440, y0=2110063.17+64000, dx=2
 
 
 
-def mk_pfile(outname='pesos', datos=None, sum_sd=None, sum_sd_dr=None):
+def mk_pfile(outname='pesos', datos=None, sum_sd=None, sum_sd_dr=None, rename = False):
     '''
     Función de creación de archivos de pesos con formato txt
 
@@ -300,9 +326,16 @@ def mk_pfile(outname='pesos', datos=None, sum_sd=None, sum_sd_dr=None):
     if isinstance(datos, pd.DataFrame) and isinstance(sum_sd, pd.DataFrame) and isinstance(sum_sd_dr, pd.DataFrame):
         nombre = outname + '.txt'
         print('Creando archivo: '+nombre)
+        if rename:
+            n_nombres = open(Path.cwd()/ 'pesos'/'salida'/'cambio_nombres.txt', 'w')
+            n_nombres.write('Anterior\tActual\n')        
         archivo = open(Path.cwd()/ 'pesos'/'salida'/nombre, 'w')
         for fila in range(datos.shape[0]):
             pozo = datos['ID'][fila]
+            if rename:
+                anterior, pozo = corregir_nombre(pozo)
+                n_nombres.write(f'{anterior}\t\t{pozo}\n')
+                
             indice = 1
             for columna in range(3,datos.shape[1]):
                 if datos.notnull().iloc[fila, columna]:
@@ -319,11 +352,13 @@ def mk_pfile(outname='pesos', datos=None, sum_sd=None, sum_sd_dr=None):
 
                     archivo.write(f'{obs_pozo} {heads} {obs:.5f} {peso:.5f}\n')
                     indice += 1
+        if rename:
+            n_nombres.close()
         archivo.close()
         print(f"Finalizado: archivo exportado en {Path.cwd()/ 'pesos'/'salida'/nombre}")
         
         
-def pesos(nombre='pesos', calcular=False, na_val = ['ND','nd']):
+def pesos(nombre='pesos', calcular=False, na_val = ['ND','nd'], rename=False):
     '''
     Función para crear un fichero con la informacion de los pesos de 
     las observaciones de carga y abatimiento para calibrar en UCODE.
@@ -442,7 +477,7 @@ def pesos(nombre='pesos', calcular=False, na_val = ['ND','nd']):
                     pozo = sum_sd_abat.loc[i,'ID']
                     sum_sd_abat.iloc[i,j] = math.sqrt(sd3['sd3'][pozo]**2 + sd4.iloc[i, j-3]**2)
             
-            mk_pfile(nombre,hojas[0], sum_sd_carga,sum_sd_abat)
+            mk_pfile(nombre,hojas[0], sum_sd_carga,sum_sd_abat, rename=rename)
             
             #Exportar los datos a un excel para volver a crear el archivo de pesos
             writer = pd.ExcelWriter(Path.cwd()/ 'pesos'/'salida'/'datos_completo.xlsx', engine='xlsxwriter')
@@ -469,5 +504,5 @@ def pesos(nombre='pesos', calcular=False, na_val = ['ND','nd']):
             datos = excel.parse(excel.sheet_names[0],na_values=na_val)
             suma_sd = excel.parse(excel.sheet_names[-2])
             suma_sd_dr = excel.parse(excel.sheet_names[-1])
-            mk_pfile(nombre, datos, suma_sd, suma_sd_dr)
+            mk_pfile(nombre, datos, suma_sd, suma_sd_dr, rename=rename)
 
