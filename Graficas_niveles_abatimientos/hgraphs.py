@@ -108,9 +108,8 @@ def graficasN_D(s_name, zone=True, obsinfo_loaded=True, united_graph = True, tim
     for i in pozos:
         n = l1.count(i)
         ddn_data = df[df['obs_id']==i].copy()
-        ddn_data.loc['time_series'] = pd.to_timedelta(ddn_data['time_series'], timestep) + pd.to_datetime(startdate)        
-        ddn_data.set_index('time_series', inplace = True)
-        
+        ddn_data['time_series'] = pd.to_timedelta(ddn_data['time_series'], timestep) + pd.to_datetime(startdate)        
+        ddn_data = ddn_data.set_index('time_series')
         if n == 1:### Únicamente niveles
             
             un_dato.append(i)
@@ -203,6 +202,7 @@ def graficasN_D(s_name, zone=True, obsinfo_loaded=True, united_graph = True, tim
                 plt.close()
             #e += 1
     
-            #if e>5:
-            #    break
+            #if e>4:
+             #   break
     print('Finalizado')
+    
