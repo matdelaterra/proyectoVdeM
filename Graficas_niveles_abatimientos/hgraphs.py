@@ -9,6 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import flopy
 import pickle
+import os
 from pathlib import Path
 
 def graficasN_D(s_name, zone=True, obsinfo_loaded=True, united_graph = True, timestep='s', startdate='1935-01-01', ddn_lim=[-50, 20]):
@@ -32,18 +33,25 @@ def graficasN_D(s_name, zone=True, obsinfo_loaded=True, united_graph = True, tim
     Importa observaciones de carga desde el archivo .hob.out el cual proveé valores simulados y observados de carga
     '''
     if zone:
-        geology = ['Lacustrine','Alluvial','Basalt','Volcaniclastic','Andesite']#lista de geología
-        obsformation = pd.read_csv(Path.cwd() / 'input' / 'obs_formation.csv') #lectura del csv obs_formation
+        obsformation = pd.read_csv(Path.cwd() / 'input' / 'zonas.csv') #lectura del csv obs_formation
+        l_zonas = list(set(list(obsformation['zona'])))
+        #print(obsformation)
+        try:    
+            os.mkdir(Path.cwd()/'output'/'zonas'/'no-zonificado')
+        except:
+            pass
+        
+        for zona in l_zonas:
+            try:
+                os.mkdir(Path.cwd()/'output'/'zonas'/zona)
+            except:
+                print('Carpeta existente: ' + zona)         
     
     df = pd.read_fwf(Path.cwd().joinpath('input').joinpath(s_name+'.hob_out'),widths=[22,19,22])#lectura de el archivo hob
     df.columns = ['simulated','observed','obs_name']#cambio de nombre de las columnas
     # Se añaden nuevas columnas con valores NaN
     df['time_series'] = np.nan
     df['obs_id'] = np.nan
-    
-    if zone:
-        df['dem'] = np.nan
-        df['geo'] = np.nan
     df['abssimulated'] = np.nan
     df['absobserved'] = np.nan
     
@@ -80,14 +88,8 @@ def graficasN_D(s_name, zone=True, obsinfo_loaded=True, united_graph = True, tim
         if df['observed'][i] > 1000:
             df.loc[i,'absobserved'] = df['observed'][i]
             df.loc[i, 'abssimulated'] = df['simulated'][i]
-    
-    if zone:        
-        #ciclo para asignar la elevación y el tipo de geología
-        for i, r in obsformation.iterrows():
-            
-            df.loc[df['obs_id']==r['IDPOZO'],'dem'] = r['ELEV']
-            df.loc[df['obs_id']==r['IDPOZO'],'geo'] = geology[r['GEOLOGY_ZONE']-1] 
 
+    
     '''
     Hasta aquí se ha preparado el DataFrame para realizar los recortes para las graficas
     
@@ -106,10 +108,20 @@ def graficasN_D(s_name, zone=True, obsinfo_loaded=True, united_graph = True, tim
     #e = 0 
     print('Generando gráficas..')
     for i in pozos:
+                  
         n = l1.count(i)
         ddn_data = df[df['obs_id']==i].copy()
         ddn_data['time_series'] = pd.to_timedelta(ddn_data['time_series'], timestep) + pd.to_datetime(startdate)        
         ddn_data = ddn_data.set_index('time_series')
+        
+        if zone:
+            df_zonas = obsformation[obsformation['ID'] == i]
+            if df_zonas.shape[0]>0:
+                folder = df_zonas.iloc[0,3]
+            else:
+                folder = 'no-zonificado'
+            filelocation = Path.cwd() / 'output'/'zonas'/folder
+                
         if n == 1:### Únicamente niveles
             
             un_dato.append(i)
