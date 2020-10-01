@@ -124,7 +124,7 @@ def nitratos2tob(MaxConcObs=1000, MaxFluxObs=1, MaxFluxCells=0,#dataset1
                 nFluxGroup=1, FScale=1, iOutFlux=1,#dataset6
                 nFluxTimeObs=1, ncells=0, iSSType=2,#dataset7
                 FluxTimeObs=0, weight_fobs=1, FluxObs=0,#dataset8
-                rho=0.1, na_val = ['ND', 'nd']):
+                rho=0.1, na_val = ['ND', 'nd'], uni = False):
     '''
     Función que convierte una base de datos con información de nitratos 
     de pozos (NO3 en mg/L) a formato .tob (transport observation package)
@@ -149,29 +149,46 @@ def nitratos2tob(MaxConcObs=1000, MaxFluxObs=1, MaxFluxCells=0,#dataset1
     
     '''
     
+    
+    
     #seleccionando archivos de excel
     path_datos = Path.cwd()/ 'tob'/'base de datos'
     path_geom = Path.cwd()/ 'tob'/'geom'
+    path_single = Path.cwd()/ 'tob'/'base de datos'/'single'
     lista_nombres = lista(path_datos)
     lista_geom = lista(path_geom)
-
+    lista_single = lista(path_single)
     if len(lista_nombres) != 0 and  len(lista_geom) == 1:
-        
-        conjunto_db = []
-        print('Importando archivos...')
-        print('Archivos de base de datos:')
+    
+        if uni:
 
-        #DataFrame principal
-        for nombre in lista_nombres:
-            df = pd.read_excel(path_datos/nombre,na_values=na_val)
-            df = df[['ALCALDIA','POZO','X','Y','NO3']]
-            fecha = ''
-            for n in [int(s) for s in nombre if s.isdigit()]:
-                fecha = fecha + str(n)
-            df['YR'] = float(fecha)
-            conjunto_db.append(df)
-            print(nombre)
-        dataframe = pd.concat(conjunto_db, ignore_index=True)
+            nombre = lista_single[0]
+            datos = pd.ExcelFile(path_single/nombre)
+            dicc = []
+            for hoja in datos.sheet_names:
+                df = datos.parse(sheet_name=hoja)
+                df['YR'] = float(hoja)
+                dicc.append(df)
+            dataframe = pd.concat(dicc, ignore_index=True)
+            dataframe = dataframe.iloc[:,:6]
+
+        else:
+
+            conjunto_db = []
+            print('Importando archivos...')
+            print('Archivos de base de datos:')
+
+            #DataFrame principal
+            for nombre in lista_nombres:
+                df = pd.read_excel(path_datos/nombre,na_values=na_val)
+                df = df[['ALCALDIA','POZO','X','Y','NO3']]
+                fecha = ''
+                for n in [int(s) for s in nombre if s.isdigit()]:
+                    fecha = fecha + str(n)
+                df['YR'] = float(fecha)
+                conjunto_db.append(df)
+                print(nombre)
+            dataframe = pd.concat(conjunto_db, ignore_index=True)
         
         #instruccion para leer la geometría 
         geometria = pd.read_excel(path_geom/lista_geom[0])
