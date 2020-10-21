@@ -116,15 +116,15 @@ def coord_params(X=0, Y=0, x_0=0, y_0=0, dx=1, dy=1):
     return row, column, r_off, c_off
 
     
-def nitratos2tob(MaxConcObs=1000, MaxFluxObs=1, MaxFluxCells=0,#dataset1
-                outnam='prueba', inConcObs=21, inFluxObs=22, inSaveObs=23,#dataset2
+def nitratos2tob(MaxConcObs=1000, MaxFluxObs=0, MaxFluxCells=0,#dataset1
+                outnam='prueba', inConcObs=29, inFluxObs=0, inSaveObs=89,#dataset2
                 Cscale=1.0, iOutCobs=1, iConcLOG=0, iConcINTP=1,#dataset3
-                COBSNAM='NO3', layer=4, weight=1, iComp=1,#dataset4
-                x0=455204.440, y0=2110063.17+64000, dx=2000, dy=2000, year_ini = 1934,#transformacion coordenadas
-                nFluxGroup=1, FScale=1, iOutFlux=1,#dataset6
-                nFluxTimeObs=1, ncells=0, iSSType=2,#dataset7
+                layer=4, weight=1, iComp=1,#dataset4
+                x0=455204.440, y0=2174063.17, dx=2000, dy=2000, year_ini = 1934,#transformacion coordenadas
+                nFluxGroup=0, FScale=1, iOutFlux=1,#dataset6
+                nFluxTimeObs=0, ncells=0, iSSType=2,#dataset7
                 FluxTimeObs=0, weight_fobs=1, FluxObs=0,#dataset8
-                rho=0.1, na_val = ['ND', 'nd'], uni = False):
+                rho=0.3, na_val = ['ND', 'nd']):
     '''
     Función que convierte una base de datos con información de nitratos 
     de pozos (NO3 en mg/L) a formato .tob (transport observation package)
@@ -149,95 +149,65 @@ def nitratos2tob(MaxConcObs=1000, MaxFluxObs=1, MaxFluxCells=0,#dataset1
     
     '''
     
-    
-    
     #seleccionando archivos de excel
     path_datos = Path.cwd()/ 'tob'/'base de datos'
     path_geom = Path.cwd()/ 'tob'/'geom'
-    path_single = Path.cwd()/ 'tob'/'base de datos'/'single'
     lista_nombres = lista(path_datos)
     lista_geom = lista(path_geom)
-    lista_single = lista(path_single)
     if len(lista_nombres) != 0 and  len(lista_geom) == 1:
-    
-        if uni:
-
-            nombre = lista_single[0]
-            datos = pd.ExcelFile(path_single/nombre)
-            dicc = []
-            for hoja in datos.sheet_names:
-                df = datos.parse(sheet_name=hoja)
-                df['YR'] = float(hoja)
-                dicc.append(df)
-            dataframe = pd.concat(dicc, ignore_index=True)
-            dataframe = dataframe.iloc[:,:6]
-
-        else:
-
-            conjunto_db = []
-            print('Importando archivos...')
-            print('Archivos de base de datos:')
-
-            #DataFrame principal
-            for nombre in lista_nombres:
-                df = pd.read_excel(path_datos/nombre,na_values=na_val)
-                df = df[['ALCALDIA','POZO','X','Y','NO3']]
-                fecha = ''
-                for n in [int(s) for s in nombre if s.isdigit()]:
-                    fecha = fecha + str(n)
-                df['YR'] = float(fecha)
-                conjunto_db.append(df)
-                print(nombre)
-            dataframe = pd.concat(conjunto_db, ignore_index=True)
-        
+        datos = pd.read_excel(path_datos/lista_nombres[0])## Leer
+        datos = datos.iloc[:, 2:]
+         
         #instruccion para leer la geometría 
         geometria = pd.read_excel(path_geom/lista_geom[0])
         print('Archivo de geometría: ', lista_geom[0])
         
-        nConcObs = dataframe['NO3'].count()
         nombre_salida = outnam + '.tob'
         escritura = open(Path.cwd()/'tob'/'salida'/nombre_salida, 'w') 
         dtime = get_time()
         header = '# TOB: Transport Observation package\t Created on ' + dtime + ' by Dpto Rec. Nat, IGF UNAM'+ '\n'
         escritura.write(header)
         
-        data_set1 = f'{MaxConcObs}\t{MaxFluxObs}\t{MaxFluxCells} # Data Set 1: MaxConcObs, MaxFluxObs, MaxFluxCells\n'
+        MaxConcObs = datos.iloc[:,3:].count().sum()
+        data_set1 = f'      {MaxConcObs}      {MaxFluxObs}      {MaxFluxCells} # Data Set 1: MaxConcObs, MaxFluxObs, MaxFluxCells\n'
         escritura.write(data_set1)
         
-        data_set2 = f'{outnam}\t{inConcObs}\t{inFluxObs}\t{inSaveObs} # Data Set 2: OUTNAM, inConcObs, inFluxObs, inSaveObs\n'
+        data_set2 = f'{outnam}      {inConcObs}      {inFluxObs}      {inSaveObs} # Data Set 2: OUTNAM, inConcObs, inFluxObs, inSaveObs\n'
         escritura.write(data_set2)
         
-        data_set3= f'{nConcObs}\t{Cscale:E}\t{iOutCobs}\t{iConcLOG}\t{iConcINTP}# Data Set 3: nConcObs, CScale, iOutCobs, iConcLOG, iConcINTP\n'
+        nConcObs = datos.iloc[:,3:].count().sum()
+        data_set3= f'      {nConcObs}    {Cscale:E}      {iOutCobs}       {iConcLOG}       {iConcINTP} # Data Set 3: nConcObs, CScale, iOutCobs, iConcLOG, iConcINTP\n'
         escritura.write(data_set3)
-        check = dataframe['NO3'].notnull()
+        #escritura.write('# Data Set 4: COBSNAM, Layer, Row, Column, iComp, TimeObs, Roff, Coff, weight, COBS\n')
         
-        escritura.write('# Data Set 4: COBSNAM, Layer, Row, Column, iComp, TimeObs, Roff, Coff, weight, COBS\n')
-        
-        for fila in range(dataframe.shape[0]):
-            if check[fila]:
-                COBS = dataframe['NO3'][fila]
+        for fila in range(datos.shape[0]):
+
+            COBS_nam = str(datos['ID'][fila])
+            row, column, r_off, c_off = coord_params(datos['X'][fila], datos['Y'][fila],
+                                                 x0, y0, dx, dy)
+            n_obs = 1
+            for columna in range(3,datos.shape[1]):
+                if datos.notnull().iloc[fila, columna]:
+                    yr = list(datos.columns)[columna]
+                    timeObs = (yr - year_ini) * 3600 * 24 * 365
                 
-                row, column, r_off, c_off = coord_params(dataframe['X'][fila], dataframe['Y'][fila],
-                                                         x0, y0, dx, dy)
-                yr = dataframe['YR'][fila]
-                timeObs = (yr - year_ini) * 3600 * 24 * 365
+                    datos_geom = geometria[(geometria['COLUMN']==column) & (geometria['ROW']==row)]
+                    dz = datos_geom.iloc[0,4]-datos_geom.iloc[0,5]
                 
-                datos_geom = geometria[(geometria['COLUMN']==column) & (geometria['ROW']==row)]
-                dz = datos_geom.iloc[0,4]-datos_geom.iloc[0,5]
+                    COBS = datos.iloc[fila, columna] * dx * dy * dz * rho  # mg/l *(1g/1000mg)(1000l/1m3) *(m3)* (adim) = g
+                    COBSNAM = COBS_nam + '_' + str(n_obs)
+                    n_obs += 1
+                    data_set4 = f'{COBSNAM}     {layer}     {row}     {column}     {iComp}  {timeObs:E}   {r_off:E}   {c_off:E}   {weight:E}   {COBS:E}\n'#datos del pozo
+                    escritura.write(data_set4) 
                 
-                COBS = dataframe['NO3'][fila] * dx * dy * dz * rho  # mg/l *(1g/1000mg)(1000l/1m3) *(m3)* (adim) = g
-                
-                data_set4 = f'{COBSNAM}\t{layer}\t{row}\t{column}\t{iComp}  {timeObs:E}   {r_off:E}   {c_off:E}   {weight:E}   {COBS:E}\n'#datos del pozo
-                
-                escritura.write(data_set4)               
-                
-        data_set6 = f'\t{nFluxGroup}  {FScale:E}   {iOutFlux} # Data Set 6: nFluxGroup, FScale, iOutFlux\n'
-        escritura.write(data_set6)
-        data_set7 = f'\t{nFluxTimeObs}    {ncells}    {iSSType} # Data Set 7: nFluxTimeObs, ncells, iSSType\n'
-        escritura.write(data_set7)
-        FOBSNAM=COBSNAM
-        data_set8 = f'{FOBSNAM}   {iComp}   {FluxTimeObs:E}   {weight_fobs:E}   {FluxObs:E} # Data set 8: FOBSNAM, iComp, FluxTimeObs, weight_fobs, FluxObs\n'
-        escritura.write(data_set8)
+        if MaxFluxObs > 0:
+            data_set6 = f'\t{nFluxGroup}  {FScale:E}   {iOutFlux} # Data Set 6: nFluxGroup, FScale, iOutFlux\n'
+            escritura.write(data_set6)
+            data_set7 = f'\t{nFluxTimeObs}    {ncells}    {iSSType} # Data Set 7: nFluxTimeObs, ncells, iSSType\n'
+            escritura.write(data_set7)
+            FOBSNAM=COBSNAM
+            data_set8 = f'{FOBSNAM}   {iComp}   {FluxTimeObs:E}   {weight_fobs:E}   {FluxObs:E} # Data set 8: FOBSNAM, iComp, FluxTimeObs, weight_fobs, FluxObs\n'
+            escritura.write(data_set8)
         escritura.close()
         
         print(f"Finalizado: archivo exportado en {Path.cwd()/'tob'/'salida'/nombre_salida}")
